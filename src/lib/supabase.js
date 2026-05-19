@@ -1,29 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
-
-function readEnv(name) {
-  if (typeof import.meta !== "undefined" && import.meta.env?.[name]) {
-    return import.meta.env[name];
-  }
-  if (typeof process !== "undefined" && process.env?.[name]) {
-    return process.env[name];
-  }
-  return undefined;
-}
+import { getSupabasePublicConfig } from "./supabase-config";
 
 function createSupabaseClient() {
-  const supabaseUrl = readEnv("VITE_SUPABASE_URL") || readEnv("SUPABASE_URL");
-  const supabaseKey =
-    readEnv("VITE_SUPABASE_ANON_KEY") ||
-    readEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
-    readEnv("SUPABASE_PUBLISHABLE_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
+  const config = getSupabasePublicConfig();
+  if (!config) {
     throw new Error(
-      "Missing Supabase config. In Vercel → Project → Settings → Environment Variables, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY), then redeploy.",
+      "Missing Supabase config. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel → Settings → Environment Variables (Production + Preview), then Redeploy.",
     );
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
+  return createClient(config.url, config.key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

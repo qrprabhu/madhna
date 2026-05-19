@@ -13,6 +13,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MobileStickyCTA } from "@/components/MobileStickyCTA";
 import { GoogleTranslateLoader } from "@/components/TranslateButton";
+import { serializeSupabaseConfigScript } from "@/lib/supabase-config";
 
 import appCss from "../styles.css?url";
 
@@ -71,9 +72,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const supabaseConfigScript = serializeSupabaseConfigScript();
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+        {supabaseConfigScript ? (
+          <script dangerouslySetInnerHTML={{ __html: supabaseConfigScript }} />
+        ) : null}
+      </head>
       <body>
         {children}
         <Scripts />
