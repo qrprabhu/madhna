@@ -83,7 +83,7 @@ function SubmitPage() {
   }
 
   return (
-    <div className="pt-28 pb-20 min-h-screen bg-gradient-to-b from-[--muted] to-background">
+    <div className="pt-28 pb-20 min-h-screen bg-gradient-to-b from-muted to-background">
       <section className="bg-hero text-white py-16 -mt-28 pt-40 mb-12 relative overflow-hidden">
         <div className="orb bg-gold w-[400px] h-[400px] top-0 right-0 opacity-30" />
         <div className="container mx-auto px-5 lg:px-8 relative">
@@ -140,8 +140,8 @@ function SubmitPage() {
               <textarea {...register("description")} rows={5} className="input resize-none" placeholder="Describe the issue in detail..." />
             </Field>
             <Field label="Image (optional)" className="md:col-span-2">
-              <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-[--gold]">
-                <Upload size={20} className="text-[--royal]" />
+              <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-gold">
+                <Upload size={20} className="text-royal" />
                 <span className="text-sm text-muted-foreground">{file?.name || "Upload supporting image"}</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
               </label>
@@ -162,7 +162,7 @@ function SubmitPage() {
 function Field({ label, error, className = "", children }: any) {
   return (
     <div className={className}>
-      <label className="block text-xs font-bold uppercase tracking-wider text-[--navy-deep] mb-1.5">{label}</label>
+      <label className="block text-xs font-bold uppercase tracking-wider text-navy-deep mb-1.5">{label}</label>
       {children}
       {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>

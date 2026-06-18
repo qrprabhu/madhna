@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { TranslateButton } from "@/components/TranslateButton";
+import vckLogo from "@/assets/vck-logo.png";
 
 const links = [
   { to: "/", label: "Home" },
@@ -31,12 +32,10 @@ export function SiteHeader() {
     }`}>
       <div className="container mx-auto px-5 lg:px-8 flex items-center justify-between h-16 lg:h-20">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gold flex items-center justify-center font-display font-black text-[--navy-deep] text-lg shadow-glow-gold">
-            VA
-          </div>
+          <img src={vckLogo} alt="VCK Logo" className="w-10 h-10 rounded-xl shadow-glow-gold" />
           <div className="hidden sm:block">
-            <div className="text-white font-display font-bold leading-tight">Vanni Arasu</div>
-            <div className="text-[10px] text-gold tracking-widest uppercase">MLA • Tindivanam</div>
+            <div className="text-white font-display font-bold leading-tight">Viduthalai Chiruthaigal Katchi</div>
+            <div className="text-[10px] text-gold tracking-widest uppercase">VCK</div>
           </div>
         </Link>
 

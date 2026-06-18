@@ -50,10 +50,10 @@ function CompletedPage() {
                 </div>
                 <div className="p-6">
                   <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold mb-2"><CheckCircle2 size={14} /> RESOLVED</div>
-                  <h3 className="font-display font-bold text-xl text-[--navy-deep] mb-2">{p.category}</h3>
+                  <h3 className="font-display font-bold text-xl text-navy-deep mb-2">{p.category}</h3>
                   <p className="text-sm text-muted-foreground mb-3">{p.description}</p>
                   {p.resolution_note && (
-                    <div className="bg-[--gold]/10 border-l-4 border-gold rounded-r-lg p-3 text-sm text-[--navy-deep] mb-3">
+                    <div className="bg-gold/10 border-l-4 border-gold rounded-r-lg p-3 text-sm text-navy-deep mb-3">
                       <strong>Resolution: </strong>{p.resolution_note}
                     </div>
                   )}

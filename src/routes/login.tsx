@@ -63,13 +63,13 @@ function LoginPage() {
       className="min-h-screen bg-hero flex items-center justify-center px-5 relative overflow-hidden"
     >
       <div className="orb bg-gold w-[400px] h-[400px] top-10 right-10 opacity-30" />
-      <div className="orb bg-[--cyan-hi] w-[400px] h-[400px] bottom-10 left-10 opacity-30" />
+      <div className="orb bg-cyan-hi w-[400px] h-[400px] bottom-10 left-10 opacity-30" />
       <div className="relative glass rounded-3xl p-8 w-full max-w-md text-white shadow-glow-gold">
         <Link to="/" className="text-xs text-white/60 hover:text-gold">
           ← Back to site
         </Link>
         <div className="text-center mb-6 mt-3">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-gold flex items-center justify-center text-[--navy-deep] mb-3">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-gold flex items-center justify-center text-navy-deep mb-3">
             <Lock />
           </div>
           <h1 className="font-display font-black text-3xl">Admin Sign In</h1>

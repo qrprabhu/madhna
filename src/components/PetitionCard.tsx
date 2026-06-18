@@ -23,7 +23,7 @@ export function PetitionCard({ petition, index = 0 }: { petition: Petition; inde
       className="group glass-light rounded-2xl p-6 shadow-card hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="font-display font-bold text-lg leading-tight text-[--navy-deep] line-clamp-2">{petition.category}</h3>
+        <h3 className="font-display font-bold text-lg leading-tight text-navy-deep line-clamp-2">{petition.category}</h3>
         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold border ${s.cls}`}>
           <Icon size={12} /> {s.label}
         </span>

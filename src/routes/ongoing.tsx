@@ -17,7 +17,7 @@ function OngoingPage() {
   return (
     <div className="pt-28 pb-20">
       <section className="bg-hero text-white py-16 -mt-28 pt-40 mb-12 relative overflow-hidden">
-        <div className="orb bg-[--cyan-hi] w-[400px] h-[400px] top-10 -right-20 opacity-40" />
+        <div className="orb bg-cyan-hi w-[400px] h-[400px] top-10 -right-20 opacity-40" />
         <div className="container mx-auto px-5 lg:px-8 relative">
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="font-display font-black text-4xl lg:text-6xl">
             Ongoing <span className="text-gradient-gold">Works</span>
