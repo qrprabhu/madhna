@@ -7,8 +7,9 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { submitPetition } from "@/lib/petitions";
 import { generatePetitionPdf } from "@/lib/petition-pdf";
+import { buildWhatsAppLink } from "@/lib/utils";
 import { toast } from "sonner";
-import { CheckCircle2, Download, ShieldCheck, Upload, FileSignature, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, MessageCircle, ShieldCheck, Upload, FileSignature, Loader2 } from "lucide-react";
 import { getFirebaseAuth, RecaptchaVerifier, signInWithPhoneNumber, toE164, type ConfirmationResult } from "@/lib/firebase";
 
 export const Route = createFileRoute("/submit-petition")({
@@ -121,8 +122,9 @@ function SubmitPage() {
         });
         if (pdfErr) throw pdfErr;
         setPdfUrl(supabase.storage.from("petitions").getPublicUrl(pdfPath).data.publicUrl);
-      } catch {
-        toast.error("Petition saved, but the PDF copy couldn't be generated.");
+      } catch (pdfErr: any) {
+        console.error("PDF generation/upload failed:", pdfErr);
+        toast.error(`Petition saved, but the PDF copy couldn't be generated: ${pdfErr?.message ?? "unknown error"}`);
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to submit");
@@ -140,14 +142,26 @@ function SubmitPage() {
           <h2 className="font-display font-black text-3xl mb-2">Petition Received</h2>
           <p className="text-white/80 mb-6">Thank you. Your voice has been heard. We'll review and follow up shortly.</p>
           {pdfUrl ? (
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-primary-gold inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl mb-4"
-            >
-              <Download size={18} /> Download Petition Copy (PDF)
-            </a>
+            <div className="flex flex-col items-center gap-3 mb-4">
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary-gold inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl w-full"
+              >
+                <Download size={18} /> Download Petition Copy (PDF)
+              </a>
+              {verifiedPhone && (
+                <a
+                  href={buildWhatsAppLink(verifiedPhone, `Your petition has been submitted successfully. Here is your petition copy: ${pdfUrl}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-green-500 text-green-400 font-semibold w-full hover:bg-green-500/10 transition-colors"
+                >
+                  <MessageCircle size={18} /> Send via WhatsApp
+                </a>
+              )}
+            </div>
           ) : (
             <p className="text-white/60 text-sm mb-4">Preparing your petition copy…</p>
           )}
