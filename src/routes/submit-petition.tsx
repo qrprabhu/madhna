@@ -7,9 +7,9 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { submitPetition } from "@/lib/petitions";
 import { generatePetitionPdf } from "@/lib/petition-pdf";
-import { buildWhatsAppLink } from "@/lib/utils";
+import { sendSms } from "@/lib/send-sms";
 import { toast } from "sonner";
-import { CheckCircle2, Download, MessageCircle, ShieldCheck, Upload, FileSignature, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, ShieldCheck, Upload, FileSignature, Loader2 } from "lucide-react";
 import { getFirebaseAuth, RecaptchaVerifier, signInWithPhoneNumber, toE164, type ConfirmationResult } from "@/lib/firebase";
 
 export const Route = createFileRoute("/submit-petition")({
@@ -121,7 +121,18 @@ function SubmitPage() {
           upsert: true,
         });
         if (pdfErr) throw pdfErr;
-        setPdfUrl(supabase.storage.from("petitions").getPublicUrl(pdfPath).data.publicUrl);
+        const publicUrl = supabase.storage.from("petitions").getPublicUrl(pdfPath).data.publicUrl;
+        setPdfUrl(publicUrl);
+        if (verifiedPhone) {
+          const message = `Your petition has been submitted successfully. Here is your petition copy: ${publicUrl}`;
+          try {
+            await sendSms({ data: { phone: verifiedPhone, message } });
+            toast.success("SMS sent to your phone");
+          } catch (smsErr: any) {
+            console.error("SMS send failed:", smsErr);
+            toast.error(`Couldn't send the SMS: ${smsErr?.message ?? "unknown error"}`);
+          }
+        }
       } catch (pdfErr: any) {
         console.error("PDF generation/upload failed:", pdfErr);
         toast.error(`Petition saved, but the PDF copy couldn't be generated: ${pdfErr?.message ?? "unknown error"}`);
@@ -152,14 +163,7 @@ function SubmitPage() {
                 <Download size={18} /> Download Petition Copy (PDF)
               </a>
               {verifiedPhone && (
-                <a
-                  href={buildWhatsAppLink(verifiedPhone, `Your petition has been submitted successfully. Here is your petition copy: ${pdfUrl}`)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-green-500 text-green-400 font-semibold w-full hover:bg-green-500/10 transition-colors"
-                >
-                  <MessageCircle size={18} /> Send via WhatsApp
-                </a>
+                <p className="text-white/60 text-xs">A text message with this copy was sent to {verifiedPhone}.</p>
               )}
             </div>
           ) : (
