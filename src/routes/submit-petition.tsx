@@ -1,13 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { submitPetition } from "@/lib/petitions";
+import { generatePetitionPdf } from "@/lib/petition-pdf";
 import { toast } from "sonner";
-import { CheckCircle2, Upload, FileSignature, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, ShieldCheck, Upload, FileSignature, Loader2 } from "lucide-react";
+import { getFirebaseAuth, RecaptchaVerifier, signInWithPhoneNumber, toE164, type ConfirmationResult } from "@/lib/firebase";
 
 export const Route = createFileRoute("/submit-petition")({
   head: () => ({ meta: [{ title: "Submit Petition — Vanni Arasu MLA" }] }),
@@ -21,7 +23,6 @@ const schema = z.object({
   address: z.string().trim().max(300).optional().or(z.literal("")),
   category: z.string().min(1, "Select a category"),
   description: z.string().trim().min(20, "Min 20 characters").max(2000),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
 });
 
 const categories = ["Roads & Infrastructure", "Water Supply", "Electricity", "Education", "Healthcare", "Sanitation", "Housing", "Social Welfare", "Employment", "Other"];
@@ -31,12 +32,62 @@ function SubmitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { priority: "medium" as const },
   });
-  const selectedPriority = watch("priority");
+  const phoneValue = watch("phone");
+  const phoneVerified = !!verifiedPhone && verifiedPhone === phoneValue;
+
+  const handleSendOtp = async () => {
+    if (!phoneValue || phoneValue.trim().length < 10) {
+      toast.error("Enter a valid phone number first");
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const auth = getFirebaseAuth();
+      // Always start from a fresh verifier — reusing one across attempts causes auth/invalid-app-credential.
+      recaptchaRef.current?.clear();
+      const container = document.getElementById("recaptcha-container");
+      if (container) container.innerHTML = "";
+      recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      confirmationRef.current = await signInWithPhoneNumber(auth, toE164(phoneValue), recaptchaRef.current);
+      setOtpSent(true);
+      setOtp("");
+      toast.success("OTP sent to your phone");
+    } catch (e: any) {
+      recaptchaRef.current?.clear();
+      recaptchaRef.current = null;
+      toast.error(e.message || "Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!confirmationRef.current) return;
+    setVerifyingOtp(true);
+    try {
+      await confirmationRef.current.confirm(otp);
+      setVerifiedPhone(phoneValue);
+      await getFirebaseAuth().signOut();
+      toast.success("Phone number verified");
+    } catch (e: any) {
+      toast.error("Invalid OTP, please try again");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     setSubmitting(true);
@@ -49,19 +100,30 @@ function SubmitPage() {
         if (upErr) throw upErr;
         image_url = supabase.storage.from("petitions").getPublicUrl(path).data.publicUrl;
       }
-      await submitPetition({
+      const petition = await submitPetition({
         name: values.name,
         phone: values.phone,
         area: values.area,
         description: values.description,
         address: values.address || null,
         category: values.category,
-        priority: values.priority,
         image_url,
       });
       setDone(true);
       toast.success("Petition Submitted Successfully");
-      setTimeout(() => navigate({ to: "/ongoing" }), 2500);
+
+      try {
+        const pdfBlob = generatePetitionPdf(petition);
+        const pdfPath = `pdfs/petition-${petition.id}.pdf`;
+        const { error: pdfErr } = await supabase.storage.from("petitions").upload(pdfPath, pdfBlob, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+        if (pdfErr) throw pdfErr;
+        setPdfUrl(supabase.storage.from("petitions").getPublicUrl(pdfPath).data.publicUrl);
+      } catch {
+        toast.error("Petition saved, but the PDF copy couldn't be generated.");
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to submit");
     } finally {
@@ -76,7 +138,24 @@ function SubmitPage() {
           className="glass rounded-3xl p-10 text-center text-white max-w-md shadow-glow-gold">
           <CheckCircle2 className="mx-auto text-gold mb-4 animate-pulse-glow" size={64} />
           <h2 className="font-display font-black text-3xl mb-2">Petition Received</h2>
-          <p className="text-white/80">Thank you. Your voice has been heard. We'll review and follow up shortly.</p>
+          <p className="text-white/80 mb-6">Thank you. Your voice has been heard. We'll review and follow up shortly.</p>
+          {pdfUrl ? (
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary-gold inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl mb-4"
+            >
+              <Download size={18} /> Download Petition Copy (PDF)
+            </a>
+          ) : (
+            <p className="text-white/60 text-sm mb-4">Preparing your petition copy…</p>
+          )}
+          <div>
+            <button onClick={() => navigate({ to: "/ongoing" })} className="text-gold text-sm font-semibold hover:underline">
+              View Ongoing Petitions →
+            </button>
+          </div>
         </motion.div>
       </div>
     );
@@ -103,9 +182,6 @@ function SubmitPage() {
             <Field label="Full Name *" error={errors.name?.message}>
               <input {...register("name")} className="input" placeholder="Your name" />
             </Field>
-            <Field label="Phone Number *" error={errors.phone?.message}>
-              <input {...register("phone")} className="input" placeholder="+91 ..." />
-            </Field>
             <Field label="Area / Village *" error={errors.area?.message}>
               <input {...register("area")} className="input" placeholder="Village or area" />
             </Field>
@@ -118,24 +194,6 @@ function SubmitPage() {
             <Field label="Address" error={errors.address?.message} className="md:col-span-2">
               <input {...register("address")} className="input" placeholder="Full address (optional)" />
             </Field>
-            <Field label="Priority *" error={errors.priority?.message} className="md:col-span-2">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(["low", "medium", "high", "urgent"] as const).map((p) => (
-                  <label key={p} className="cursor-pointer">
-                    <input type="radio" {...register("priority")} value={p} className="sr-only" />
-                    <div
-                      className={`text-center py-2.5 rounded-xl border-2 text-sm capitalize transition-all ${
-                        selectedPriority === p
-                          ? "border-amber-500 bg-amber-100 text-slate-900 font-bold shadow-sm ring-2 ring-amber-400/60"
-                          : "border-slate-200 bg-white text-slate-600 font-medium hover:border-amber-300"
-                      }`}
-                    >
-                      {p}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </Field>
             <Field label="Problem Description *" error={errors.description?.message} className="md:col-span-2">
               <textarea {...register("description")} rows={5} className="input resize-none" placeholder="Describe the issue in detail..." />
             </Field>
@@ -146,12 +204,55 @@ function SubmitPage() {
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
               </label>
             </Field>
+            <Field label="Phone Number *" error={errors.phone?.message} className="md:col-span-2">
+              <div className="flex gap-2">
+                <input {...register("phone")} className="input" placeholder="+91 ..." disabled={phoneVerified} />
+                {phoneVerified ? (
+                  <span className="flex items-center gap-1.5 px-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 text-sm font-semibold whitespace-nowrap">
+                    <ShieldCheck size={16} /> Verified
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={sendingOtp}
+                    className="px-4 rounded-xl border-2 border-gold text-navy-deep font-semibold text-sm whitespace-nowrap hover:bg-gold/10 transition-colors disabled:opacity-50"
+                  >
+                    {sendingOtp ? "Sending…" : otpSent ? "Resend OTP" : "Send OTP"}
+                  </button>
+                )}
+              </div>
+              {otpSent && !phoneVerified && (
+                <div className="flex gap-2 mt-3">
+                  <input
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="input"
+                    placeholder="Enter 6-digit OTP"
+                    maxLength={6}
+                    inputMode="numeric"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyingOtp || otp.trim().length < 4}
+                    className="btn-primary-gold px-5 rounded-xl text-sm font-semibold whitespace-nowrap disabled:opacity-50"
+                  >
+                    {verifyingOtp ? "Verifying…" : "Verify"}
+                  </button>
+                </div>
+              )}
+              <div id="recaptcha-container" />
+            </Field>
           </div>
 
-          <button disabled={submitting} className="btn-primary-gold w-full py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
+          <button disabled={submitting || !phoneVerified} className="btn-primary-gold w-full py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
             {submitting ? <Loader2 className="animate-spin" size={18} /> : <FileSignature size={18} />}
             {submitting ? "Submitting…" : "Submit Petition"}
           </button>
+          {!phoneVerified && (
+            <p className="text-center text-xs text-muted-foreground">Verify your phone number above to submit your petition.</p>
+          )}
         </motion.form>
       </div>
       <style>{`.input{width:100%;padding:.75rem 1rem;border:1.5px solid var(--border);border-radius:.75rem;background:white;font-size:.95rem;transition:all .2s}.input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(251,192,45,.2)}`}</style>

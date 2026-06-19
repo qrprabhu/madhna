@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPetitions, fetchStats, normalizeStatus, type Petition, type PetitionStatus } from "@/lib/petitions";
+import { fetchPetitions, fetchStats, getPetitionPdfUrl, normalizeStatus, type Petition, type PetitionStatus } from "@/lib/petitions";
+import { buildWhatsAppLink } from "@/lib/utils";
 import { toast } from "sonner";
-import { LogOut, Search, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Upload, ShieldCheck, FileText, Users, MapPin } from "lucide-react";
+import { LogOut, Search, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Upload, ShieldCheck, FileText, MessageCircle, Users, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin Dashboard" }] }),
@@ -198,6 +199,19 @@ function AdminPetitionRow({ petition, onChange }: { petition: Petition; onChange
           )}
           {statusKey !== "Resolved" && (
             <button onClick={() => setResolveOpen(true)} className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold hover:bg-emerald-200">Resolve</button>
+          )}
+          {petition.phone && (
+            <a
+              href={buildWhatsAppLink(
+                petition.phone,
+                `Hello ${petition.name ?? ""}, your petition #${petition.id} (${petition.category ?? "General"}) has been received. Here is your petition copy: ${getPetitionPdfUrl(petition.id)}`,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-green-100 text-green-800 text-xs font-bold hover:bg-green-200 inline-flex items-center gap-1.5"
+            >
+              <MessageCircle size={13} /> Notify via WhatsApp
+            </a>
           )}
           <button onClick={() => setOpen(!open)} className="px-3 py-1.5 rounded-lg bg-muted text-xs font-bold">{open ? "Hide" : "Details"}</button>
           <button onClick={remove} className="p-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200"><Trash2 size={14} /></button>

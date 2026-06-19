@@ -18,6 +18,11 @@ function toReadableSupabaseError(error: unknown): Error {
 /** Matches DB default and admin updates */
 export type PetitionStatus = "Pending" | "Ongoing" | "Resolved";
 
+/** Public URL for the PDF copy generated at submission time (see petition-pdf.ts). */
+export function getPetitionPdfUrl(petitionId: number) {
+  return supabase.storage.from("petitions").getPublicUrl(`pdfs/petition-${petitionId}.pdf`).data.publicUrl;
+}
+
 export type PetitionPriority = "low" | "medium" | "high" | "urgent";
 
 export interface Petition {
@@ -70,19 +75,24 @@ export async function submitPetition(fields: {
   image_url?: string | null;
 }) {
   try {
-    const { error } = await supabase.from("petitions").insert([
-      {
-        name: fields.name,
-        phone: fields.phone,
-        area: fields.area,
-        description: fields.description,
-        address: fields.address ?? null,
-        category: fields.category ?? "Other",
-        priority: fields.priority ?? "medium",
-        image_url: fields.image_url ?? null,
-      },
-    ]);
+    const { data, error } = await supabase
+      .from("petitions")
+      .insert([
+        {
+          name: fields.name,
+          phone: fields.phone,
+          area: fields.area,
+          description: fields.description,
+          address: fields.address ?? null,
+          category: fields.category ?? "Other",
+          priority: fields.priority ?? "medium",
+          image_url: fields.image_url ?? null,
+        },
+      ])
+      .select()
+      .single();
     if (error) throw error;
+    return data as Petition;
   } catch (e) {
     throw toReadableSupabaseError(e);
   }
