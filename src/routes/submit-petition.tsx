@@ -75,6 +75,15 @@ function SubmitPage() {
     }
   };
 
+  const handleSkipVerification = () => {
+    if (!phoneValue || phoneValue.trim().length < 10) {
+      toast.error("Enter a valid phone number first");
+      return;
+    }
+    setVerifiedPhone(phoneValue);
+    toast.success("Verification skipped for this number");
+  };
+
   const handleVerifyOtp = async () => {
     if (!confirmationRef.current) return;
     setVerifyingOtp(true);
@@ -240,6 +249,15 @@ function SubmitPage() {
                   </button>
                 )}
               </div>
+              {!phoneVerified && (
+                <button
+                  type="button"
+                  onClick={handleSkipVerification}
+                  className="text-xs text-muted-foreground hover:text-gold underline mt-1.5"
+                >
+                  Using Jio? OTP delivery is unreliable on Jio — skip verification
+                </button>
+              )}
               {otpSent && !phoneVerified && (
                 <div className="flex gap-2 mt-3">
                   <input
