@@ -26,7 +26,10 @@ export function getFirebaseAuth() {
 /** Normalizes a user-entered phone number to E.164, defaulting to the +91 (India) country code. */
 export function toE164(rawPhone: string) {
   const digits = rawPhone.replace(/[^\d+]/g, "");
-  return digits.startsWith("+") ? digits : `+91${digits}`;
+  if (digits.startsWith("+")) return digits;
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  return `+${digits}`;
 }
 
 export { RecaptchaVerifier, signInWithPhoneNumber };
