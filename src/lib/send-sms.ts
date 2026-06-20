@@ -9,15 +9,18 @@ export const sendSms = createServerFn({ method: "POST" }).handler(
       throw new Error("Missing HTTPSMS_API_KEY or HTTPSMS_FROM_NUMBER in your environment.");
     }
 
+    const normalizedFrom = toE164(from);
     const res = await fetch("https://api.httpsms.com/v1/messages/send", {
       method: "POST",
       headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: toE164(from), to: toE164(data.phone), content: data.message }),
+      body: JSON.stringify({ from: normalizedFrom, to: toE164(data.phone), content: data.message }),
     });
 
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`httpSMS send failed (${res.status}): ${body}`);
+      throw new Error(
+        `httpSMS send failed (${res.status}): ${body} [configured HTTPSMS_FROM_NUMBER raw="${from}" len=${from.length}, normalized="${normalizedFrom}"]`,
+      );
     }
 
     return { sent: true };
