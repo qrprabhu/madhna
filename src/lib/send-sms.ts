@@ -12,7 +12,7 @@ export const sendSms = createServerFn({ method: "POST" }).handler(
     const res = await fetch("https://api.httpsms.com/v1/messages/send", {
       method: "POST",
       headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: toE164(data.phone), content: data.message }),
+      body: JSON.stringify({ from: toE164(from), to: toE164(data.phone), content: data.message }),
     });
 
     if (!res.ok) {
