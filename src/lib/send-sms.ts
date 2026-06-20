@@ -1,9 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { toE164 } from "@/lib/firebase";
 
-export const sendSms = createServerFn({ method: "POST" })
-  .validator((data: { phone: string; message: string }) => data)
-  .handler(async ({ data }) => {
+export const sendSms = createServerFn({ method: "POST" }).handler(
+  async ({ data }: { data: { phone: string; message: string } }) => {
     const apiKey = process.env.HTTPSMS_API_KEY;
     const from = process.env.HTTPSMS_FROM_NUMBER;
     if (!apiKey || !from) {
@@ -22,4 +21,5 @@ export const sendSms = createServerFn({ method: "POST" })
     }
 
     return { sent: true };
-  });
+  },
+);
