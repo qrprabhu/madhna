@@ -1,23 +1,24 @@
 import { jsPDF } from "jspdf";
 import type { Petition } from "@/lib/petitions";
+import { LETTERHEAD_MARGIN, drawLetterheadFooter, drawLetterheadHeader } from "@/lib/letterhead-pdf";
 
-export function generatePetitionPdf(petition: Petition): Blob {
+export async function generatePetitionPdf(petition: Petition): Promise<Blob> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const margin = 56;
-  let y = margin;
+  const margin = LETTERHEAD_MARGIN;
+  const pageW = doc.internal.pageSize.getWidth();
+
+  let y = await drawLetterheadHeader(doc);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("Vanni Arasu MLA Office — Petition Copy", margin, y);
-  y += 18;
-  doc.setDrawColor(212, 175, 55);
-  doc.setLineWidth(1.5);
-  doc.line(margin, y, 595 - margin, y);
-  y += 30;
+  doc.setFontSize(14);
+  doc.setTextColor(11, 31, 58);
+  doc.text("Petition Copy", margin, y);
+  y += 26;
 
   const row = (label: string, value: string) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
     doc.text(label, margin, y);
     doc.setFont("helvetica", "normal");
     doc.text(value || "—", margin + 130, y);
@@ -39,9 +40,9 @@ export function generatePetitionPdf(petition: Petition): Blob {
   doc.text("Problem Description", margin, y);
   y += 18;
   doc.setFont("helvetica", "normal");
-  const lines = doc.splitTextToSize(petition.description ?? "", 595 - margin * 2);
+  const lines = doc.splitTextToSize(petition.description ?? "", pageW - margin * 2);
   doc.text(lines, margin, y);
-  y += lines.length * 14 + 30;
+  y += lines.length * 14 + 20;
 
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
@@ -50,6 +51,8 @@ export function generatePetitionPdf(petition: Petition): Blob {
     margin,
     y,
   );
+
+  drawLetterheadFooter(doc);
 
   return doc.output("blob");
 }

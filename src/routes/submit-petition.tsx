@@ -123,7 +123,7 @@ function SubmitPage() {
       toast.success("Petition Submitted Successfully");
 
       try {
-        const pdfBlob = generatePetitionPdf(petition);
+        const pdfBlob = await generatePetitionPdf(petition);
         const pdfPath = `pdfs/petition-${petition.id}.pdf`;
         const { error: pdfErr } = await supabase.storage.from("petitions").upload(pdfPath, pdfBlob, {
           contentType: "application/pdf",
@@ -253,7 +253,7 @@ function SubmitPage() {
                 <button
                   type="button"
                   onClick={handleSkipVerification}
-                  className="text-xs text-muted-foreground hover:text-gold underline mt-1.5"
+                  className="text-base font-semibold text-navy-deep hover:text-gold underline mt-2"
                 >
                   Using Jio? OTP delivery is unreliable on Jio — skip verification
                 </button>

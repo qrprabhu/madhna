@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabase";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchPetitions, fetchStats, getPetitionPdfUrl, normalizeStatus, type Petition, type PetitionStatus } from "@/lib/petitions";
 import { buildWhatsAppLink } from "@/lib/utils";
+import { downloadLetterheadPdf } from "@/lib/letterhead-pdf";
 import { toast } from "sonner";
-import { LogOut, Search, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Upload, ShieldCheck, FileText, MessageCircle, Users, MapPin } from "lucide-react";
+import { LogOut, Search, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Upload, ShieldCheck, FileText, MessageCircle, Users, MapPin, FileBadge2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin Dashboard" }] }),
@@ -18,7 +19,19 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [filter, setFilter] = useState<"all" | PetitionStatus>("all");
   const [search, setSearch] = useState("");
+  const [downloadingLetterhead, setDownloadingLetterhead] = useState(false);
   const qc = useQueryClient();
+
+  const handleDownloadLetterhead = async () => {
+    setDownloadingLetterhead(true);
+    try {
+      await downloadLetterheadPdf();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to generate letterhead");
+    } finally {
+      setDownloadingLetterhead(false);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -80,9 +93,16 @@ function AdminPage() {
               <div className="text-[10px] text-gold uppercase tracking-widest">Vanni Arasu MLA</div>
             </div>
           </Link>
-          <button onClick={logout} className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-white/10">
-            <LogOut size={14} /> Sign out
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={handleDownloadLetterhead} disabled={downloadingLetterhead}
+              className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-white/10 disabled:opacity-50">
+              {downloadingLetterhead ? <Loader2 size={14} className="animate-spin" /> : <FileBadge2 size={14} />}
+              Letterhead
+            </button>
+            <button onClick={logout} className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-white/10">
+              <LogOut size={14} /> Sign out
+            </button>
+          </div>
         </div>
       </header>
 
